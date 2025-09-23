@@ -1,9 +1,10 @@
 import { Inngest } from "inngest";
 import { connectDB } from "./db.js";
 import { User } from "../models/user.model.js";
+import { deleteStreamuser, upsertStreamuser } from "./stream.js";
 
 // Create a client to send and receive events
-export const inngest = new Inngest({ id: "slack-read-node" });
+export const inngest = new Inngest({ id: "slack-react-node" });
 
 const syncUser = inngest.createFunction(
   { id: "sync-user" },
@@ -23,10 +24,10 @@ const syncUser = inngest.createFunction(
 
     await User.create(newUser);
 
-    // TODO: more things to do when a user is created
-
-    await step.run("Log Event", () => {
-      console.log("New user created:", event.data);
+    await upsertStreamuser({
+      id: newUser.clerkId.toString(),
+      name: newUser.name,
+      image: newUser.avatar,
     });
   }
 );
@@ -41,11 +42,7 @@ const deleteUserFromDB = inngest.createFunction(
 
     await User.deleteOne({ clerkId: id });
 
-    // TODO: more things to do when a user is created
-
-    await step.run("Log Event", () => {
-      console.log("Deleted user:", event.data);
-    });
+    await deleteStreamuser(id);
   }
 );
 
